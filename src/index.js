@@ -6,13 +6,6 @@ const task_router = require('./routers/task_router')
 const app = express()
 const port = process.env.PORT || 3000
 
-
-//middleware function
-// app.use((req, res, next) => {
-//   // console.log(req.method, req.path)
-//   next()
-// })
-
 app.use(express.json()) // auto parse the json
 
 // add routers

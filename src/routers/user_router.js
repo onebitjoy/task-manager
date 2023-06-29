@@ -98,4 +98,31 @@ user_router.post("/users/login", async (req, res) => {
 
 })
 
+// user logout
+user_router.post("/users/logout", auth, async (req, res) => {
+
+  try {
+    req.user.tokens = req.user.tokens.filter((token) => token.token !== req.token)
+    await req.user.save()
+    res.send()  
+  } catch (error) {
+    res.status(500).send()
+  }
+
+})
+
+// logout user from everywhere
+user_router.post("/users/logoutall" , auth , async (req, res) => {
+
+  try {
+    req.user.tokens = []
+
+    await req.user.save()
+    res.send({success: "You have successfully logged out on all devices!"})
+  } catch (error) {
+    res.status(500).send()
+  }
+
+})
+
 module.exports = user_router
