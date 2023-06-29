@@ -1,30 +1,27 @@
 const express = require('express')
 const user_router = express.Router()
 const user_model = require('../models/user')
-
-
-// ----------------------- USERS
+const auth = require("../middleware/auth")
 
 // create a user
 user_router.post('/users', async (req, res) => {
   const user = new user_model(req.body)
+
   try {
     await user.save()
-    res.status(201).send(user)
+    const token = await user.generateAuthToken()
+
+    res.status(201).send({ user, token })
   } catch (error) {
     res.status(400).send(error)
   }
 }
 )
 
-// get all users
-user_router.get('/users', async (req, res) => {
-  try {
-    const users = await user_model.find({})
-    res.status(200).send(users)
-  } catch (error) {
-    res.status(500).send()
-  }
+// get all users + middleware
+// The arrow func will only be called if inside auth() we execute next()
+user_router.get('/users/me', auth, async (req, res) => {
+  res.send(req.user)
 })
 
 //get single user
@@ -42,8 +39,9 @@ user_router.get('/users/:id', async (req, res) => {
   }
 })
 
+// update a user
 user_router.patch('/users/:id', async (req, res) => {
-  /* the new will let us return the updated user, runValidators will let us run all validation */
+
   const updates = Object.keys(req.body)
   const allowedUpdates = ['name', 'email', 'password', 'age']
   const isValidOperation = updates.every((update) => allowedUpdates.includes(update))
@@ -60,13 +58,7 @@ user_router.patch('/users/:id', async (req, res) => {
     })
 
     await user.save()
-    // const user
-    //   = await user_model
-    //     .findByIdAndUpdate(
-    //       req.params.id, // requesting id
-    //       req.body, // new update body
-    //       { new: true, runValidators: true } // options to user_routerly
-    //     )
+
     if (!user) { res.status(400).send() }
     res.send(user)
 
@@ -75,6 +67,7 @@ user_router.patch('/users/:id', async (req, res) => {
   }
 })
 
+//delete a user
 user_router.delete("/users/:id", async (req, res) => {
 
   try {
@@ -84,21 +77,20 @@ user_router.delete("/users/:id", async (req, res) => {
     }
     res.status(200).send(user)
   } catch (error) {
-    res.status(500).send({ error_this: error })
+    res.status(500).send({ error })
   }
 
 })
 
-user_router.post("/users/login/", async (req, res) => {
+// login a user
+user_router.post("/users/login", async (req, res) => {
 
   try {
-    const user = await user_model.findByCredentials(req.body.username, req.body.password)
+    const user = await user_model.findByCredentials(req.body.email, req.body.password)
 
-    if (!user) {
-      return res.status(404).send({ error: "User not found!" })
-    }
+    const token = await user.generateAuthToken()
 
-    res.send(user)
+    res.send({ user, token })
 
   } catch {
     () => { res.status(400).send() }

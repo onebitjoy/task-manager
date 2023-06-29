@@ -1,8 +1,9 @@
 const mongoose = require("mongoose")
 const validator = require("validator")
 const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
 
-const User_Schema = mongoose.Schema(
+const User_Schema = new mongoose.Schema(
   {
 
     name: {
@@ -23,6 +24,7 @@ const User_Schema = mongoose.Schema(
       require: true,
       unique: true,
       trim: true,
+      lowercase: true,
       validate(value) {
         if (!validator.isEmail(value)) {
           throw new Error("Invalid email!")
@@ -38,28 +40,45 @@ const User_Schema = mongoose.Schema(
           throw new Error("The password can't contain 'password' in itself for security measures!");
         }
       }
-    }
+    },
+    tokens: [{
+      token: {
+        type: String,
+        required: true
+      }
+    }]
 
   }
 )
 
+/* Models are accessible only to the instance of user_model, while statics can be used over the Schema itself */
+//generate auth token
+User_Schema.methods.generateAuthToken = async function () {
+  const user = this
+  const token = await jwt.sign({ _id: user._id.toString() }, 'secretkey')
+
+  user.tokens = user.tokens.concat({ token: token })
+  await user.save()
+
+  return token
+}
 
 //login user
 User_Schema.statics.findByCredentials = async (email, password) => {
+
+  const user = await User_Model.findOne({ email: email })
+
+  if (!user) {
+    throw new Error("Unable to login!")
+  }
   
-    const user = await User_Model.findOne({ email: email })
-    
-    if(!user){
-      throw new Error("Unable to login!")
-    }
+  const isMatch = await bcrypt.compare(password, user.password)
+  
+  if (!isMatch) {
+    throw new Error("Unable to login!")
+  }
 
-    const isMatch = bcrypt.compare(password, user.password)
-
-    if(!isMatch) {
-      throw new Error("Unable to login!")
-    }
-
-    return user
+  return user
 }
 
 // hash password
@@ -67,7 +86,7 @@ User_Schema.pre('save', async function (next) {
 
   const user = this
   if (user.isModified('password')) {
-    user.password = await bcrypt.hash(user.password, 12)
+    user.password = await bcrypt.hash(user.password, 10)
   }
 
   next()
