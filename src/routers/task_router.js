@@ -25,9 +25,21 @@ task_router.post('/tasks', auth, async (req, res) => {
 // get all tasks
 task_router.get('/tasks', auth, async (req, res) => {
   try {
-    // const tasks = await task_model.find({ owner: req.user._id})
 
-    await req.user.populate("usertasks")
+    const match = {}
+
+    if( req.query.completed ) {
+      match.completed = req.query.completed === "true"
+    }
+
+    await req.user.populate({
+      path: "usertasks",  
+      match: match,
+      options: {
+        limit : parseInt(req.query.limit),
+        skip: parseInt(req.query.skip)
+      }
+    })
     res.status(200).send(req.user.usertasks)
   } catch (error) {
     res.status(400).send()
