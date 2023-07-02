@@ -47,10 +47,11 @@ user_router.patch('/users/me', auth, async (req, res) => {
 //delete a user
 user_router.delete("/users/me", auth, async (req, res) => {
   try {
-    await req.user.deleteOne({ _id: req.user._id })
-    res.status(200).send({ status: "User profile deleted!" })
+    // await req.user.remove()
+    await req.user.deleteOne()
+    res.send(req.user)
   } catch (error) {
-    res.status(500).send({ error })
+    res.status(500).send({ error: error.message })
   }
 })
 

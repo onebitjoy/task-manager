@@ -2,6 +2,7 @@ const mongoose = require("mongoose")
 const validator = require("validator")
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
+const task_model = require("./task")
 
 const User_Schema = new mongoose.Schema(
   {
@@ -47,8 +48,9 @@ const User_Schema = new mongoose.Schema(
         required: true
       }
     }]
-
-  }
+  },
+  
+  { timestamps: true }
 )
 
 /* Models are accessible only to the instance of user_model, while statics can be used over the Schema itself */
@@ -70,7 +72,7 @@ User_Schema.methods.toJSON = function () {
 
   // delete private info before sending
   delete userObject.password
-  delete userObject.tokens 
+  delete userObject.tokens
 
   return userObject
 }
@@ -83,9 +85,9 @@ User_Schema.statics.findByCredentials = async (email, password) => {
   if (!user) {
     throw new Error("Unable to login!")
   }
-  
+
   const isMatch = await bcrypt.compare(password, user.password)
-  
+
   if (!isMatch) {
     throw new Error("Unable to login!")
   }
@@ -95,14 +97,27 @@ User_Schema.statics.findByCredentials = async (email, password) => {
 
 // hash password
 User_Schema.pre('save', async function (next) {
-
   const user = this
   if (user.isModified('password')) {
     user.password = await bcrypt.hash(user.password, 10)
   }
-
   next()
+})
 
+// create a virtual property
+User_Schema.virtual('usertasks', {
+  ref: 'task',
+  localField: "_id",
+  foreignField: "owner"
+})
+
+// middleware to remove all the tasks if the user is deleted
+
+User_Schema.pre('deleteOne', { document: true }, async function (next) {
+  const user = this
+  await task_model.deleteMany({ owner: user._id })
+  console.log("all the tasks are deleted!");
+  next()
 })
 
 const User_Model = mongoose.model('user', User_Schema)
