@@ -27,17 +27,23 @@ task_router.get('/tasks', auth, async (req, res) => {
   try {
 
     const match = {}
+    const sort = {}
 
     if( req.query.completed ) {
       match.completed = req.query.completed === "true"
     }
 
+    if(req.query.sortBy){
+      const parts = req.query.sortBy.split(":")
+      sort[parts[0]] = parts[1] === 'asc' ? 1 : -1
+    }
     await req.user.populate({
       path: "usertasks",  
       match: match,
       options: {
         limit : parseInt(req.query.limit),
-        skip: parseInt(req.query.skip)
+        skip: parseInt(req.query.skip),
+        sort : sort
       }
     })
     res.status(200).send(req.user.usertasks)
