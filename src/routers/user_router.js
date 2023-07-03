@@ -99,7 +99,7 @@ user_router.post("/users/logoutall", auth, async (req, res) => {
 // --------------------------------- multer
 const multer = require("multer")
 const upload = multer({
-  dest: "avatars",
+  // dest: "avatars", <- this won't be needed as we are storing data in the db
   limits: {
     fileSize: 1000000
   },
@@ -126,24 +126,45 @@ const fileupload = multer({
 
 
 // multer upload avatar
-user_router.post(
-  "/users/me/avatar",
-  upload.single("avatar"),
-  (req, res) => {
-    res.send()
-  },
+user_router.post("/users/me/avatar", auth, upload.single("avatar"), async (req, res) => {
+  req.user.avatar = req.file.buffer
+  await req.user.save()
+  res.send()
+},
   (error, req, res, next) => {
     res.status(404).send({ error: error.message })
   }
 )
 
-//multer file upload
-user_router.post(
-  "/upload",
-  fileupload.single("file"),
-  (req, res) => {
+user_router.delete("/users/me/avatar", auth, async (req, res) => {
+  try {
+    req.user.avatar = undefined
+    await req.user.save()
     res.send()
-  },
+  } catch (error) {
+    res.status(500).send({ error: error.message })
+  }
+})
+
+user_router.get("/users/:id/avatar", async (req, res) => {
+  try {
+    const user = await user_model.findById(req.params.id)
+    if (!user || !user.avatar) {
+      throw new Error()
+    }
+
+    res.set("Content-Type", "image/jpg")
+    res.send(user.avatar)
+
+  } catch (error) {
+    res.status(404).send()
+  }
+})
+
+//multer file upload
+user_router.post("/upload", auth, fileupload.single("file"), (req, res) => {
+  res.send()
+},
   (error, req, res, next) => {
     res.status(404).send({ error: error.message })
   }
