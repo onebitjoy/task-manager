@@ -13,12 +13,3 @@ app.use(user_router)
 app.use(task_router)
 
 app.listen(port, () => console.log(`Server app listening on port ${port}!`))
-
-
-// using multer
-const multer = require("multer")
-const upload = multer({ dest: "images" })
-
-app.post("/upload", upload.single('uploadkey'), (req, res) => {
-  res.send()
-})

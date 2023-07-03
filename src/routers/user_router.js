@@ -2,7 +2,7 @@ const express = require('express')
 const user_router = express.Router()
 const user_model = require('../models/user')
 const auth = require("../middleware/auth")
-
+const sharp = require("sharp")
 
 // create a user
 user_router.post('/users', async (req, res) => {
@@ -127,7 +127,9 @@ const fileupload = multer({
 
 // multer upload avatar
 user_router.post("/users/me/avatar", auth, upload.single("avatar"), async (req, res) => {
-  req.user.avatar = req.file.buffer
+
+  const buffer = await sharp(req.file.buffer).resize({ width: 250, height: 250 }).png().toBuffer()
+  req.user.avatar = buffer
   await req.user.save()
   res.send()
 },
@@ -153,7 +155,7 @@ user_router.get("/users/:id/avatar", async (req, res) => {
       throw new Error()
     }
 
-    res.set("Content-Type", "image/jpg")
+    res.set("Content-Type", "image/png")
     res.send(user.avatar)
 
   } catch (error) {

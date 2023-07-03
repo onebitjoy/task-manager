@@ -76,6 +76,7 @@ User_Schema.methods.toJSON = function () {
   // delete private info before sending
   delete userObject.password
   delete userObject.tokens
+  delete userObject.avatar
 
   return userObject
 }
