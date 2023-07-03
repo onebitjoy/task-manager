@@ -2,8 +2,7 @@ const express = require('express')
 const user_router = express.Router()
 const user_model = require('../models/user')
 const auth = require("../middleware/auth")
-const multer = require("multer")
-const upload = multer({ dest: "avatars" })
+
 
 // create a user
 user_router.post('/users', async (req, res) => {
@@ -97,9 +96,57 @@ user_router.post("/users/logoutall", auth, async (req, res) => {
 
 })
 
-// multer upload file
-user_router.post("/users/me/avatar", upload.single("avatar"), (req, res) => {
-  res.send()
+// --------------------------------- multer
+const multer = require("multer")
+const upload = multer({
+  dest: "avatars",
+  limits: {
+    fileSize: 1000000
+  },
+  fileFilter(req, file, cb) {
+    if (!file.originalname.match(/\.(jpg|jpeg|png)$/)) {
+      return cb(new Error("Please only upload a jpg/jpeg/png file"))
+    }
+    cb(undefined, true)
+  }
 })
+
+const fileupload = multer({
+  dest: "documents",
+  limits: {
+    fileSize: 1000000
+  },
+  fileFilter(req, file, cb) {
+    if (!file.originalname.match(/\.(doc|docx|pdf)$/)) {
+      return cb(new Error("Please upload a document in doc/docx/pdf format"))
+    }
+    cb(undefined, true)
+  }
+})
+
+
+// multer upload avatar
+user_router.post(
+  "/users/me/avatar",
+  upload.single("avatar"),
+  (req, res) => {
+    res.send()
+  },
+  (error, req, res, next) => {
+    res.status(404).send({ error: error.message })
+  }
+)
+
+//multer file upload
+user_router.post(
+  "/upload",
+  fileupload.single("file"),
+  (req, res) => {
+    res.send()
+  },
+  (error, req, res, next) => {
+    res.status(404).send({ error: error.message })
+  }
+)
 
 module.exports = user_router
