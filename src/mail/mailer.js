@@ -14,7 +14,7 @@ async function mail(subject, msg, useremail) {
       subject: subject,
       text: msg,
     })
-    .then(msg => console.log("Message sent to the user: " + useremail))
+    .then((message) => console.log("Message sent to the user: " + useremail))
     .catch(() => { }); // not logging any error
 }
 
