@@ -3,6 +3,7 @@ const user_router = express.Router()
 const user_model = require('../models/user')
 const auth = require("../middleware/auth")
 const sharp = require("sharp")
+const mailer = require("../mail/mailer")
 
 // create a user
 user_router.post('/users', async (req, res) => {
@@ -11,7 +12,7 @@ user_router.post('/users', async (req, res) => {
   try {
     await user.save()
     const token = await user.generateAuthToken()
-
+    mailer("Welcome to the task manager app!", "This email is an invitation email sent when you create an account with us.", user.email)
     res.status(201).send({ user, token })
   } catch (error) {
     res.status(400).send(error)
@@ -48,7 +49,7 @@ user_router.patch('/users/me', auth, async (req, res) => {
 //delete a user
 user_router.delete("/users/me", auth, async (req, res) => {
   try {
-    // await req.user.remove()
+    mailer("Your account is being deleted!", "Thank you for your time on our website. We hope that you be back soon on our service. Good Bye.", req.user.email)
     await req.user.deleteOne()
     res.send(req.user)
   } catch (error) {
